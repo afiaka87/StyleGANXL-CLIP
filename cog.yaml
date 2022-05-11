@@ -1,0 +1,53 @@
+# Configuration for Cog ⚙️
+# Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
+image: "r8.im/casualganpapers/styleganxl-clip"
+build:
+  # set to true if your model requires a GPU
+  gpu: true
+
+  # a list of ubuntu apt packages to install
+  system_packages:
+    - "libgl1-mesa-glx"
+    - "libglib2.0-0"
+    - "ninja-build"
+
+  # python version in the form '3.8' or '3.8.12'
+  python_version: "3.8"
+
+  # a list of packages in the format <package-name>==<version>
+  python_packages:
+    # Use `clip-anytorch` package rather than manually installing openai/CLIP
+    - "clip-anytorch==2.4.0"
+    - "dill==0.3.4"
+    - "ftfy==6.1.1"
+    - "einops==0.4.1"
+    - "ninja==1.10.2.3"
+    - "numpy==1.21.5"
+    - "pillow==9.1.0"
+    - "regex==2022.4.24" 
+    - "timm==0.5.4"
+    - "torch==1.11.0"
+    - "torchvision==0.12.0"
+    - "tqdm==4.64.0"
+    - "scipy==1.8.0"
+    - "wcwidth==0.2.5"
+  
+  # commands run after the environment is setup
+  run:
+    - git clone https://github.com/autonomousvision/stylegan_xl
+    # in this case, we need to manually set the gcc version so that `relu_filtered` can be JIT compiled for pytorch.
+    - apt-get update && apt-get install -y software-properties-common
+    - add-apt-repository ppa:ubuntu-toolchain-r/test
+    - apt update -y && apt-get install ffmpeg -y
+    - apt install g++-7 -y
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    - update-alternatives --config gcc
+    # we also want to download CLIP and stylegan_xl checkpoints so they are not re-downloaded on each run.
+    - mkdir -p /root/.cache/clip/
+    - wget --output-document "/root/.cache/clip/ViT-L-14-336px.pt" "https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt"
+    # if wanted, you could pre-load the stylegan_xl checkpoints here as well. you could also just push them from your local directory as i've done.
+    # - mkdir -p /root/.cache/stylegan_xl/
+    # - wget --output-document "/root/.cache/stylegan_xl/imagenet512.pkl" "https://s3.eu-central-1.amazonaws.com/avg-projects/stylegan_xl/models/imagenet512.pkl"
+
+# predict.py defines how predictions are run on your model
+predict: "predict.py:Predictor"
